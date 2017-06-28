@@ -6,7 +6,6 @@
 #include <string>
 #include <random>
 
-#include "ThreadThing.hpp"
 
 template<typename T>
 class Matrix;

@@ -39,12 +39,6 @@
     <ClInclude Include="pythonBindings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadThing.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AvxFloat8.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -69,9 +63,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AvxFloat8.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ThreadPool.cpp">

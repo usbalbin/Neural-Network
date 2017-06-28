@@ -117,7 +117,7 @@ int main()
 	std::function<double(void)> randomizer = std::bind(distribution, randomEngine);
 
 
-	VectorOps::init(CL_DEVICE_TYPE_GPU);
+	VectorOps::init(/*CL_DEVICE_TYPE_GPU*/);
 	//ThreadPool::init(2);
 
 

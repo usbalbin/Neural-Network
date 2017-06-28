@@ -191,6 +191,9 @@ void VectorOps::init(cl_uint deviceType) {
 		std::cout << deviceStatus.second << std::endl << std::endl;
 	}
 
+	std::cout << "Done compiling" << std::endl;
+	std::cout << "Creaing Kernels..." << std::endl;
+
 	add = decltype(add)(program, "add");
 	sub = decltype(sub)(program, "sub");
 	mul = decltype(mul)(program, "mul");
@@ -211,4 +214,6 @@ void VectorOps::init(cl_uint deviceType) {
 	mulCR = decltype(mulCR)(program, "mulCR");
 
 	sumPow2 = decltype(sumPow2)(program, "sumPow2");
+
+	std::cout << "OpenCL initialized" << std::endl;
 }
