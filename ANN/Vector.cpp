@@ -29,21 +29,10 @@ size_t VectorOps::workGroupCount;
 
 void VectorOps::init(cl_uint deviceType) {
 	cl::Context::setDefault(deviceType);
-	//cl::DeviceCommandQueue::makeDefault(
-	//	cl::Context::getDefault(), cl::Device::getDefault());
-
 
 	globalSize = 2560;
 	localSize = 64;
 	workGroupCount = globalSize / localSize;
-	
-
-
-
-
-
-
-
 
 
 
@@ -92,9 +81,9 @@ void VectorOps::init(cl_uint deviceType) {
 
 
 	std::string mulVMStr =
-	"#define column i																				\n\
+	"#define column i																			\n\
 	#define columnCount get_global_size(0)														\n\
-		kernel void mulVM(global float* res, global float* v1, global float* m2, int rowCount) {	\n\
+		kernel void mulVM(global float* res, global float* v1, global float* m2, int rowCount) {\n\
 		float temp = 0;																			\n\
 		for (int row = 0; row < rowCount; ++row) {												\n\
 			int mIndex = columnCount * row + column;											\n\
@@ -102,7 +91,7 @@ void VectorOps::init(cl_uint deviceType) {
 		}																						\n\
 		res[column] = temp;																		\n\
 	}																							\n\
-	#undef column																					\n\
+	#undef column																				\n\
 	#undef columnCount\n";
 
 
@@ -147,7 +136,7 @@ void VectorOps::init(cl_uint deviceType) {
 			int count) {																		\n\
 																								\n\
 #if __OPENCL_VERSION__ < 200																	\n\
-		local float temp[64];//lz];																	\n\
+		local float temp[64];//lz];																\n\
 #endif																							\n\
 		float value = 0;																		\n\
 		for (int globalIndex = i; globalIndex < count; globalIndex += gz) {						\n\
@@ -158,12 +147,12 @@ void VectorOps::init(cl_uint deviceType) {
 		results[wgid] = work_group_reduce_sum(value);											\n\
 #else																							\n\
 		temp[lid] = value;																		\n\
-		barrier(CLK_LOCAL_MEM_FENCE);																\n\
+		barrier(CLK_LOCAL_MEM_FENCE);															\n\
 																								\n\
 		for (int offset = lz / 2; offset > 0; offset /= 2) {									\n\
 			if (lid < offset)																	\n\
 				temp[lid] += temp[lid + offset];												\n\
-			barrier(CLK_LOCAL_MEM_FENCE);															\n\
+			barrier(CLK_LOCAL_MEM_FENCE);														\n\
 		}																						\n\
 																								\n\
 		if (lid == 0)																			\n\
@@ -221,7 +210,5 @@ void VectorOps::init(cl_uint deviceType) {
 	mulVTM = decltype(mulVTM)(program, "mulVTM");
 	mulCR = decltype(mulCR)(program, "mulCR");
 
-
-	
 	sumPow2 = decltype(sumPow2)(program, "sumPow2");
 }

@@ -4,8 +4,6 @@
 #include "stdafx.h"
 #include "ANN.hpp"
 
-#include <float.h>
-//unsigned fpControl = _controlfp_s(&fpControl, _EM_INEXACT | _EM_UNDERFLOW | _EM_OVERFLOW, _MCW_EM);
 
 //#include "Matrix.hpp"
 #include "Utils.hpp"

@@ -19,11 +19,12 @@ class Vector
 {
 public:
 	Vector<T>() : elemCount(0) {}
+
 	//TODO: Look if it can be WRITE_ONLY
 	Vector<T>(size_t elemCount) : elemCount(elemCount), buffer(CL_MEM_READ_WRITE, sizeof(T) * elemCount) {}
 
 
-
+	//TODO: Look if it can be READ_ONLY
 	Vector<T>(std::vector<T>& v) : elemCount(v.size()), buffer(v.begin(), v.end(), true) {//Construct from std::vector
 	}
 
@@ -217,7 +218,7 @@ namespace VectorOps {
 	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulVM;
 	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulVTM;
 	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulCR;
-	//extern cl::KernelFunctor<cl::Buffer> sum;
+
 	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl_int> sumPow2;
 
 	extern size_t globalSize;
