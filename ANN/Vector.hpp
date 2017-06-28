@@ -1,263 +1,228 @@
 #pragma once
+#pragma once
 #include <assert.h>
 #include <vector>
 
 #include <string>
 #include <random>
 
-#include "ThreadPool.hpp"
+#include "ThreadThing.hpp"
 
 template<typename T>
 class Matrix;
 
-#include "VectorBase.hpp"
-#if 0
+
+#include "OCL\cl2.hpp"
+
 template<typename T>
-class Vector : public Vector<T>
+class Vector
 {
 public:
-	using Vector::Vector;//Use inherited constructors
-
-	Vector<T> operator*(Vector<T>& other) {
-		return forEachRet<T>(*this, other, [](const T& lhs, const T& rhs) -> T{
-			return lhs * rhs;
-		});
-	};
+	Vector<T>() : elemCount(0) {}
+	//TODO: Look if it can be WRITE_ONLY
+	Vector<T>(size_t elemCount) : elemCount(elemCount), buffer(CL_MEM_READ_WRITE, sizeof(T) * elemCount) {}
 
 
 
-	Vector<T> operator+(Vector<T>& other) {
-		return forEachRet(*this, other, [](const T& lhs, const T& rhs) {
-			return lhs + rhs;
-		});
-	};
+	Vector<T>(std::vector<T>& v) : elemCount(v.size()), buffer(v.begin(), v.end(), true) {//Construct from std::vector
+	}
 
-	Vector<T> operator-(Vector<T>& other) {
-		return forEachRet(*this, other, [](const T& lhs, const T& rhs) {
-			return lhs - rhs;
-		});
-	};
+
+	Vector<T>(const std::initializer_list<T>& elems) : Vector<T>(std::vector<T>(elems)) {
+
+	}
+
+	Vector<T>(size_t elemCount, T value) : Vector(std::vector<T>(elemCount, value)) {}
 
 
 
-	Vector<T>& operator+=(Vector<T>& other) {
-		forEach(*this, other, [](T& lhs, const T& rhs) -> void {
-			lhs += rhs;
-		});
+
+	/*friend void swap(VectorBase<T>& first, VectorBase<T>& second) {
+	std::swap(first.data, second.data);
+	std::swap(first.elemCount, second.elemCount);
+	std::swap(first.totalCapacity, second.totalCapacity);
+	}*/
+
+	/*VectorBase<T>(VectorBase<T>&& v) : VectorBase<T>() {	//Move constructor
+	swap(*this, v);
+	}*/
+
+	/*VectorBase<T>& operator=(VectorBase<T> other) {
+	swap(*this, other);
+	return *this;
+	}*/
+
+
+	Vector<T>(size_t columnCount, std::function<double(void)>& randomizer) : Vector<T>(normalDistributed(randomizer, columnCount)) {  }
+
+	std::vector<T> normalDistributed(std::function<double(void)>& randomizer, size_t columnCount) {
+		std::vector<T> result(columnCount);
+		for (auto& elem : result) {
+			elem = T(randomizer());
+		}
+		return result;
+	}
+
+
+	T& operator[](size_t i) { assert(i >= 0 && i < elemCount); return data[i]; }
+	const T& operator[](size_t i) const { assert(i >= 0 && i < elemCount); return data[i]; }
+
+
+	constexpr size_t size() const { return elemCount; }
+
+	constexpr size_t capacity() const { return totalCapacity; }
+
+	std::string toString() const {
+		std::stringstream ss;
+		ss << "{ " << data[0];
+		for (size_t i = 1; i < size(); i++)
+			ss << ", " << data[i];
+		ss << " }";
+
+		return ss.str();
+	}
+
+	Vector operator+(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		Vector<T> result(rhs.size());
+		VectorOps::add(clRange(), result.buffer, buffer, rhs.buffer);
+
+		return result;
+	}
+
+	Vector operator-(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		Vector<T> result(rhs.size());
+		VectorOps::sub(clRange(), result.buffer, buffer, rhs.buffer);
+
+		return result;
+	}
+
+	Vector operator*(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		Vector<T> result(rhs.size());
+		VectorOps::mul(clRange(), result.buffer, buffer, rhs.buffer);
+
+		return result;
+	}
+
+	friend Vector operator*(T& lhs, Vector& rhs) {
+		Vector<T> result(rhs.size());
+		VectorOps::mulS(result.clRange(), result.buffer, lhs, rhs.buffer);
+
+		return result;
+	}
+
+	Vector operator/(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		Vector<T> result(rhs.size());
+		VectorOps::div(clRange(), result.buffer, buffer, rhs.buffer);
+
+		return result;
+	}
+
+	Vector& operator+=(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		VectorOps::addE(clRange(), buffer, rhs.buffer);
+
 		return *this;
-	};
+	}
 
-	Vector<T>& operator-=(Vector<T>& other) {
-		forEach<T>(*this, other, [](T& lhs, const T& rhs) -> void{
-			lhs -= rhs;
-		});
+	Vector& operator-=(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		VectorOps::subE(clRange(), buffer, rhs.buffer);
+
 		return *this;
-	};
+	}
+
+	Vector& operator*=(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		VectorOps::mulE(clRange(), buffer, rhs.buffer);
+
+		return *this;
+	}
+
+	Vector& operator/=(Vector& rhs) {
+		assert(rhs.size() == size());
+
+		VectorOps::divE(clRange(), buffer, rhs.buffer);
+
+		return *this;
+	}
+
+
+	friend float sumPow2(Vector data) {
+		assert(data.size() % 2 == 0, "Make sure of pow2Ness");
+		using VectorOps::globalSize;
+		using VectorOps::localSize;
+
+		Vector resVec(VectorOps::workGroupCount);
+		VectorOps::sumPow2(
+			cl::EnqueueArgs(cl::NDRange(globalSize), cl::NDRange(localSize)),
+			data.getBuffer(), resVec.getBuffer(), data.size());
+
+		auto results = resVec.toStd();
+		return std::accumulate(results.begin(), results.end(), 0.0f);
+	}
+
+	friend Vector<T> sigmoid(Vector<T>& in) {
+		Vector<T> result(in.size());
+		VectorOps::sigmoid(in.clRange(), result.buffer, in.buffer);
+		return result;
+	}
+
+	friend Vector<T> sigmoidPrime(Vector<T>& in) {
+		Vector<T> result(in.size());
+		VectorOps::sigmoidPrime(in.clRange(), result.buffer, in.buffer);
+		return result;
+	}
+
+	std::vector<T> toStd() { std::vector<T> result(elemCount);  cl::copy(buffer, result.begin(), result.end()); return result; }//Performs deep copy
+
+	auto clRange() {
+		return cl::EnqueueArgs(cl::NDRange(size()));
+	}
+
+	auto& getBuffer() { return buffer; }
+protected:
 
 private:
+	cl::Buffer buffer;
+	size_t elemCount;
+	size_t totalCapacity;
 };
 
+namespace VectorOps {
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> add;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> sub;
+	extern cl::KernelFunctor<cl::Buffer, float, cl::Buffer> mulS;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> mul;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer> div;
 
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> addE;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> subE;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> mulE;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> divE;
 
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> sigmoid;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer> sigmoidPrime;
 
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulVM;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulVTM;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl::Buffer, cl_int> mulCR;
+	//extern cl::KernelFunctor<cl::Buffer> sum;
+	extern cl::KernelFunctor<cl::Buffer, cl::Buffer, cl_int> sumPow2;
 
+	extern size_t globalSize;
+	extern size_t localSize;
+	extern size_t workGroupCount;
 
-
-template<typename T, typename F>
-Vector<T> forEachRet(Vector<T>& lhs, Vector<T>& rhs, F& p) {
-	assert(lhs.size() == rhs.size());
-	Vector<T> result(lhs.size());
-	forEachH([&result, &p](size_t i, Vector<T>& lhs, Vector<T>& rhs) -> void{
-		result[i] = p(lhs[i], rhs[i]);
-	}, lhs, rhs);
-	return result;
+	void init(cl_uint deviceType = CL_DEVICE_TYPE_GPU);
 }
-
-template<typename T, typename F>
-void forEach(Vector<T>& lhs, Vector<T>& rhs, F& p) {
-	assert(lhs.size() == rhs.size());
-	forEachH([&p](size_t i, Vector<T>& lhs, Vector<T>& rhs) {
-		p(lhs[i], rhs[i]);
-	}, lhs, rhs);
-}
-
-
-template<typename F, typename T, typename... Ts>//, typename... Ts>
-void forEachH(F& p, Vector<T>& v, Ts&... arg) {
-//	assert(false, "USE AVX VERSION INSTEAD!!!");
-//	throw;
-#ifdef MULTI_THREADED
-	ThreadPool::loop(v.size(), [&](size_t i) {
-		p(i, v, arg...);
-	});
-#else
-	for (size_t i = 0; i < v.size(); i++)
-		p(i, v, arg...);
-#endif
-}
-
-
-
-template<typename T>
-Vector<T> operator*(T& lhs, Vector<T>& rhs) {
-	Vector<T> result(rhs.size());
-	//forEachH([&](size_t i) {
-	//	result[i] = lhs * rhs[i];
-	//}, rhs, lhs);
-	return result;
-}
-
-template<typename T>
-T dot(Vector<T>& lhs, Vector<T>& rhs) {
-	assert(lhs.size() == rhs.size());
-	T result = 0;
-	for (size_t i = 0; i < rhs.size(); ++i) {
-		result += lhs[i] * rhs[i];
-	}
-	return result;
-}
-
-//#include "VectorAvx.hpp"
-#include "Vector.cpp"
-
-
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
-#include "Vector.hpp"
-
-template<typename T>
-Vector<T> Vector<T>::elemWiseMul(Vector<T>& other) {
-	assert(this->size() == other.size());
-
-	Vector<T> result(size());
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(size(), [&](size_t i) {
-		result[i] = data[i] * other[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < size(); ++i)
-		result[i] = data[i] * other[i];
-#endif
-	return result;
-}
-
-template<typename T>
-Vector<T>& Vector<T>::operator+=(Vector<T>& other) {
-	assert(this->size() == other.size());
-
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(size(), [&](size_t i) {
-		data[i] += other[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < size(); i++)
-		data[i] += other[i];
-#endif
-	return *this;
-}
-
-
-template<typename T>
-Vector<T>& Vector<T>::operator-=(Vector<T>& other) {
-	assert(this->size() == other.size());
-
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(size(), [&](size_t i) {
-		data[i] -= other[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < size(); i++)
-		data[i] -= other[i];
-#endif
-	return *this;
-}
-
-template<typename T>
-Vector<T> operator*(
-	T& thisS,
-	Vector<T>& otherV
-	) {
-	Vector<T> result(otherV.size());
-
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(result.size(), [&](size_t i) {
-		result[i] = thisS * otherV[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < result.size(); i++)
-		result[i] = thisS * otherV[i];
-#endif
-	return result;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template<typename T>
-T dot(Vector<T>& thisV, Vector<T>& otherV) {
-	assert(thisV.size() == otherV.size());
-
-	T result = T(0);
-	for (size_t i = 0; i < thisV.size(); i++)
-		result += thisV[i] * otherV[i];
-
-	return result;
-}
-
-template<typename T>
-Vector<T> add(Vector<T>& thisV, Vector<T>& otherV) {
-	assert(thisV.size() == otherV.size());
-
-	Vector<T> result(thisV.size());
-
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(result.size(), [&](size_t i) {
-		result[i] = thisV[i] - otherV[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < thisV.size(); ++i)
-		result[i] = thisV[i] + otherV[i];
-#endif
-	return result;
-}
-
-template<typename T>
-Vector<T> sub(Vector<T>& thisV, Vector<T>& otherV) {
-	assert(thisV.size() == otherV.size());
-
-	Vector<T> result(thisV.size());
-
-#ifdef MULTI_THREADED
-	ThreadThing t;
-	t.run(result.size(), [&](size_t i) {
-		result[i] = thisV[i] - otherV[i];
-	}).wait();
-#else
-	for (size_t i = 0; i < thisV.size(); ++i)
-		result[i] = thisV[i] - otherV[i];
-#endif
-
-	return result;
-}
-
-
-#endif

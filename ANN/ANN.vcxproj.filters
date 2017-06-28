@@ -48,9 +48,6 @@
     <ClInclude Include="Math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VectorBase.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VectorAllocator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,16 +77,13 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VectorBase.cpp">
+    <ClCompile Include="Vector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="main.py">
       <Filter>Source Files</Filter>
-    </None>
-    <None Include="VectorAvx.hpp">
-      <Filter>Header Files</Filter>
     </None>
     <None Include="VectorAvx.cpp">
       <Filter>Resource Files</Filter>

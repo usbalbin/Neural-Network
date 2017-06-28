@@ -18,7 +18,6 @@
 
 
 ANN::ANN(const std::vector<size_t>& layerSizes){
-	if(!ThreadPool::initialized) ThreadPool::init();
 	//std::random_device randomDevice = std::random_device();
 	std::mt19937 randomEngine = std::mt19937(0/*randomDevice()*/);
 	std::normal_distribution<double> distribution(0, 1);

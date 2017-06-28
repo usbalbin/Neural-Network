@@ -438,7 +438,6 @@
     <ClInclude Include="Utils.hpp" />
     <ClInclude Include="Vector.hpp" />
     <ClInclude Include="VectorAllocator.hpp" />
-    <ClInclude Include="VectorBase.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ANN.cpp" />
@@ -448,10 +447,9 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="VectorBase.cpp" />
+    <ClCompile Include="Vector.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="VectorAvx.hpp" />
     <None Include="VectorAvx.cpp" />
     <None Include="Vector.cpp" />
     <None Include="main.py" />
