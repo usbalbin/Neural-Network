@@ -27,6 +27,8 @@ size_t VectorOps::globalSize;
 size_t VectorOps::localSize;
 size_t VectorOps::workGroupCount;
 
+bool VectorOps::initialized = false;
+
 void VectorOps::init(cl_uint deviceType) {
 	cl::Context::setDefault(deviceType);
 
@@ -216,4 +218,6 @@ void VectorOps::init(cl_uint deviceType) {
 	sumPow2 = decltype(sumPow2)(program, "sumPow2");
 
 	std::cout << "OpenCL initialized" << std::endl;
+
+	initialized = true;
 }

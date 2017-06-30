@@ -52,8 +52,6 @@ void ANN::backPropogate(Sample<float>& sample, std::vector<Matrix<float>>& gradi
 	assert(gradientsBiasesOut.size() == layers.size() && gradientsWeightsOut.size() == layers.size());
 
 	auto activation = sample.indata;
-	//auto remove = sample.indata.toStd();
-	//auto removeToo = sample.expectedResult.toStd();
 	
 	std::vector<Vector<float>> rawData;		//Every layers raw output(without activationFunc)
 	std::vector<Vector<float>> activations;	//Every layers activations(raw with activationFunc applied)
@@ -62,14 +60,12 @@ void ANN::backPropogate(Sample<float>& sample, std::vector<Matrix<float>>& gradi
 	//Feedforward
 	for (auto& layer : layers) {
 		auto raw = activation * layer.weights + layer.biases;
-		//auto removeMe = raw.toStd();					//TODO: remove
 
 		rawData.push_back(raw);
 
 		activation = activationFunc(raw);
 		activations.push_back(activation);
 
-		//auto removeMeToo = activation.toStd();					//TODO: remove
 	}
 
 	//Work backwards to calculate deltas
@@ -79,8 +75,9 @@ void ANN::backPropogate(Sample<float>& sample, std::vector<Matrix<float>>& gradi
 		auto& out = activations[activations.size() - 1];
 		auto& in = (activations.size() > 1) ? activations[activations.size() - 2] : sample.indata;
 
-		delta = (out - sample.expectedResult) * activationFuncPrime(rawData.back());
-		//auto removeMePlz = delta.toStd();							//TODO: remove me
+		delta = (out - sample.expectedResult);//Cross entropy cost
+		//delta = (out - sample.expectedResult) * activationFuncPrime(rawData.back());//Quadratic cost
+		
 		gradientsBiasesOut.back() += delta;
 		gradientsWeightsOut.back() += mulColumnRow(in, delta);//TODO: Check if "in" and "delta" should be swapped
 	}
@@ -90,7 +87,7 @@ void ANN::backPropogate(Sample<float>& sample, std::vector<Matrix<float>>& gradi
 		auto& in = activations[i - 1];
 
 		delta = mulTranspMatrix(delta, layers[i + 1].weights) * activationFuncPrime(rawData[i]);
-		//auto removeMeNow = delta.toStd();							//TODO: remove me
+		
 		gradientsBiasesOut[i] += delta;
 		gradientsWeightsOut[i] += mulColumnRow(in, delta);//TODO: Check if "in" and "delta" should be swapped
 	}

@@ -1,41 +1,46 @@
+import random
 import sys
 sys.path.append("../x64/PythonLib/")
 from ANN import *
 
-initCL()
+import loader
+
+print(loader.to_percent([1, 0.5, 0.1, 0.3]))
+
 print("OpenCL initialized!!!")
 
 
-n = ANN([3, 25, 1])
+batch_size = 10
+epoch_count = 30
+
+n = ANN([784, 100, 10])
 print("Network initialized")
 
 
-samples = [
-	Sample(Vector([1.0, 1.0, 1.0]), Vector([1.0])),
-	Sample(Vector([0.0, 1.0, 0.0]), Vector([1.0])),
-	Sample(Vector([0.0, 1.0, 1.0]), Vector([1.0])),
-	Sample(Vector([0.0, 0.0, 0.0]), Vector([0.0])),
-	Sample(Vector([1.0, 0.0, 1.0]), Vector([1.0])),
-	Sample(Vector([1.0, 1.0, 0.0]), Vector([1.0]))
-]
 
+training_samples = []
+validation_samples = []
+test_samples = []
 
-print("1 1 1", n.feedForward([1.0, 1.0, 1.0]))
-print("0 1 1", n.feedForward([0.0, 1.0, 1.0]))
-print("1 1 0", n.feedForward([1.0, 1.0, 0.0]))
-print("1 0 1", n.feedForward([1.0, 0.0, 1.0]))
-print("0 0 0", n.feedForward([0.0, 0.0, 0.0]))
+loader.load(training_samples, validation_samples, test_samples)
 
-for i in range(100000):
-    n.learn(0.2, samples)
-    if i % 1000 == 0:
-        print()
-        print()
-        print("1 1 1", n.feedForward([1.0, 1.0, 1.0]))
-        print("0 1 1", n.feedForward([0.0, 1.0, 1.0]))
-        print("1 1 0", n.feedForward([1.0, 1.0, 0.0]))
-        print("1 0 1", n.feedForward([1.0, 0.0, 1.0]))
-        print("0 0 0", n.feedForward([0.0, 0.0, 0.0]))
+test_samples = test_samples[0:8]
 
+random.shuffle(training_samples)
+
+for test_sample in test_samples:
+	print(test_sample[1], ": ", loader.to_percent(n.feedForward(test_sample[0])))
+
+for k in range(epoch_count):
+    for i in range(0, len(training_samples) - batch_size, batch_size):
+        n.learn(3.0 / batch_size, training_samples[i:i+batch_size])
+    print()
+    print()
+    for test_sample in test_samples:
+        print(test_sample[1], ": ", loader.to_percent(n.feedForward(test_sample[0])))
+        
+
+for test_sample in test_samples:
+    print(test_sample[1], ": ", loader.to_percent(n.feedForward(test_sample[0])))
 
 input()

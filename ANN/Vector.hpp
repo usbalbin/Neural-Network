@@ -17,14 +17,19 @@ template<typename T>
 class Vector
 {
 public:
-	Vector<T>() : elemCount(0) {}
+	Vector<T>() : elemCount(0) { if(!VectorOps::initialized) VectorOps::init();  }
 
 	//TODO: Look if it can be WRITE_ONLY
-	Vector<T>(size_t elemCount) : elemCount(elemCount), buffer(CL_MEM_READ_WRITE, sizeof(T) * elemCount) {}
+	Vector<T>(size_t elemCount) : Vector<T>(){
+		this->elemCount = elemCount;
+		buffer = cl::Buffer(CL_MEM_READ_WRITE, sizeof(T) * elemCount);
+	}
 
 
 	//TODO: Look if it can be READ_ONLY
-	Vector<T>(std::vector<T>& v) : elemCount(v.size()), buffer(v.begin(), v.end(), true) {//Construct from std::vector
+	Vector<T>(std::vector<T>& v) : Vector<T>() {//Construct from std::vector
+		this->elemCount = v.size();
+		this->buffer = cl::Buffer(v.begin(), v.end(), true);
 	}
 
 
@@ -223,6 +228,8 @@ namespace VectorOps {
 	extern size_t globalSize;
 	extern size_t localSize;
 	extern size_t workGroupCount;
+
+	extern bool initialized;
 
 	void init(cl_uint deviceType = CL_DEVICE_TYPE_GPU);
 }

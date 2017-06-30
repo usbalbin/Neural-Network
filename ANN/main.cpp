@@ -117,9 +117,7 @@ int main()
 	std::function<double(void)> randomizer = std::bind(distribution, randomEngine);
 
 
-	VectorOps::init(/*CL_DEVICE_TYPE_GPU*/);
-	//ThreadPool::init(2);
-
+	
 
 	Vector<float> a(1000, randomizer);
 	Matrix<float> b(1000, 500, randomizer);
