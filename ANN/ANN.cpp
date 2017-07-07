@@ -10,7 +10,7 @@
 #include "Math.hpp"
 #include <iostream>
 #include <numeric> //TODO: remove me
-
+#include <fstream>
 
 
 
@@ -128,4 +128,41 @@ void ANN::learn(float learningRate, std::vector<Sample<float>>& samples)
 	}
 
 	applyGradients(learningRate, gradientWeights, gradientBiases);
+}
+
+void ANN::writeToFile(std::string& path) {
+	/*
+	layerCount,
+	
+	layers[0],
+	...
+	...
+	layers[layerCount - 1]
+	*/
+	
+	std::ofstream file(path, std::ios::binary);
+
+	writeIntToFile(layers.size(), file);
+
+	for(auto& layer : layers)
+		layer.writeToFile(file);
+}
+
+ANN::ANN(std::string & path)
+{
+	/*
+	layerCount,
+	
+	layers[0],
+	...
+	...
+	layers[layerCount - 1]
+	*/
+
+	
+	std::ifstream file(path, std::ios::binary);
+
+	int layerCount = readIntFromFile(file);
+	for (int i = 0; i < layerCount; ++i)
+		layers.emplace_back(file);
 }

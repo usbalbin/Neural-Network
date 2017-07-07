@@ -22,6 +22,23 @@ struct Layer {
 		weights = Matrix<T>(inputCount, nodeCount, initializer);
 		biases = Vector<T>(nodeCount, distributor);
 	};
+	void writeToFile(std::ostream& file) {
+		/*
+		biases
+		weights
+		*/
+		biases.writeToFile(file);
+		weights.writeToFile(file);
+	}
+
+	Layer(std::istream& file) {
+		/*
+		biases
+		weights
+		*/
+		this->biases = Vector<T>(file);
+		this->weights = Matrix<T>(file);
+	}
 	Vector<T> biases;
 	Matrix<T> weights;
 };
@@ -59,6 +76,8 @@ public:
 	//inline void learn(float learningRate, Sample<float>& sample);
 	void learn(float learningRate, std::vector<Sample<float>>& samples);
 
+	void writeToFile(std::string& path);
+	ANN(std::string& path);
 private:
 	std::vector<Layer<float>> layers;
 };

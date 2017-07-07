@@ -29,3 +29,23 @@ constexpr Vector<T> sigmoidPrime(Vector<T> x) {
 
 float hsum_ps_sse3(const __m128& v);
 float hsum256_ps_avx(const __m256& v);
+
+inline void writeIntToFile(int32_t value, std::ostream& file) {
+	file.write((char*)&value, sizeof(int32_t));
+}
+
+inline void writeFloatToFile(float value, std::ostream& file) {
+	file.write((char*)&value, sizeof(float));
+}
+
+inline int32_t readIntFromFile(std::istream& file) {
+	int32_t value;
+	file.read((char*)&value, sizeof(int32_t));
+	return value;
+}
+
+inline float readFloatFromFile(std::istream& file) {
+	float value;
+	file.read((char*)&value, sizeof(float));
+	return value;
+}

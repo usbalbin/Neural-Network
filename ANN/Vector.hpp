@@ -196,6 +196,25 @@ public:
 	}
 
 	auto& getBuffer() { return buffer; }
+
+
+	inline void Vector<T>::writeToFile(std::ostream & file)
+	{
+		writeIntToFile(size(), file);
+		auto data = toStd();
+		for (auto elem : data)
+			writeFloatToFile(elem, file);
+	}
+
+	Vector(std::istream& file) {
+		this->elemCount = readIntFromFile(file);
+
+		std::vector<T> v;
+		for (int i = 0; i < elemCount; ++i)
+			v.push_back(readFloatFromFile(file));
+
+		this->buffer = cl::Buffer(v.begin(), v.end(), true);
+	}
 protected:
 
 private:

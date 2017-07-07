@@ -238,7 +238,28 @@ public:
 	auto& getBuffer() { return data.getBuffer(); }
 	constexpr size_t getColumnCount() const { return columnCount; }
 	constexpr size_t getRowCount() const { return rowCount; }
-	Vector<T>& getData() { return data; }								//TODO: Consider removing me
+	Vector<T>& getData() { return data; }//TODO: Consider removing me
+
+	inline void writeToFile(std::ostream& file) {
+		writeIntToFile(rowCount, file);
+		writeIntToFile(columnCount, file);
+
+		auto v = data.toStd();
+		for (auto elem : v)
+			writeFloatToFile(elem, file);
+	}
+
+	Matrix(std::istream& file) {
+		this->rowCount = readIntFromFile(file);
+		this->columnCount = readIntFromFile(file);
+
+		std::vector<T> v;
+		for (int i = 0; i < rowCount; ++i)
+			for (int j = 0; j < columnCount; ++j)
+				v.push_back(readFloatFromFile(file));
+
+		this->data = Vector<T>(v);
+	}
 private:
 	size_t rowCount;
 	size_t columnCount;
